@@ -73,9 +73,19 @@ Disponible en: http://localhost:5173
 
 ### 🐳 Docker
 
+One-shot script (recommended — see [DOCKER.md](./DOCKER.md) for full docs):
+
 ```bash
-# Con docker-compose (recomendado)
-docker-compose up
+./docker-run.sh
+```
+
+App will be available at http://localhost:8080.
+
+Manual alternatives:
+
+```bash
+# With docker compose
+docker compose up
 
 # Manual build & run
 docker build -t danny-lab:latest .
