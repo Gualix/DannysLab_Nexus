@@ -32,7 +32,7 @@ COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
 RUN npm ci --only=production || true
 
 # Copy built application from builder
-COPY --from=builder /app/.output ./
+COPY --from=builder /app/dist ./dist
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -51,4 +51,4 @@ EXPOSE 3000
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start the application
-CMD ["node", ".output/server/index.js"]
+CMD ["node", "dist/server/index.js"]

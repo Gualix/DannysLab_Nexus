@@ -1,8 +1,33 @@
 # DannysLab_Nexus
 The Danny’s Lab Nexus serves as the definitive intersection of operational precision and creative inspiration, transforming complex logistics into a seamless digital gateway that elevates service delivery and democratizes STEM innovation for the entire community, both within and beyond Akamai.
+
+---
+
+## 🎯 ¡EMPIEZA AQUÍ! (15 minutos)
+
+> **Si solo tienes 15 minutos y quieres ejecutar la app:**
+
+👉 **[RUN NOW (3 pasos)](./RUN_NOW.md)**
+
+Necesitas:
+- Node.js 22+ → https://nodejs.org/
+- Docker → https://www.docker.com/
+- Credenciales Supabase → https://supabase.com (gratis)
+
+Solo:
+```bash
+./setup-and-run.sh
+docker-compose up
+# http://localhost:3000
+```
+
+---
+
 ## 🚀 Quick Links
-- 🎯 **[QUICK START](./QUICK_START.md)** - ¡EMPIEZA AQUÍ! (3 pasos para correr)- 📖 **[Setup & Deployment Guide](./SETUP.md)** - Instrucciones completas para desarrollo y producción
-- � **[Full Documentation Index](./DOCUMENTATION.md)** - Índice completo de toda la documentación
+
+- 🎯 **[RUN NOW (3 pasos)](./RUN_NOW.md)** - ¡EMPIEZA AQUÍ!
+- 📖 **[Setup & Deployment Guide](./SETUP.md)** - Instrucciones completas para desarrollo y producción
+- 📚 **[Full Documentation Index](./DOCUMENTATION.md)** - Índice completo de toda la documentación
 - 📋 **[Code Analysis](./ANALYSIS.md)** - Análisis de código y puntos de mejora
 - ✨ **[What's New](./IMPROVEMENTS.md)** - Resumen de mejoras implementadas
 - 🚢 **[Deployment Checklist](./DEPLOY_CHECKLIST.md)** - Checklist pre-producción

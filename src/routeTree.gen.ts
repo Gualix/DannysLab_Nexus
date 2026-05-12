@@ -16,6 +16,7 @@ import { Route as RequestWorkshopRouteImport } from './routes/request.workshop'
 import { Route as RequestLabSpaceRouteImport } from './routes/request.lab-space'
 import { Route as RequestInstitutionalRouteImport } from './routes/request.institutional'
 import { Route as RequestFabricationRouteImport } from './routes/request.fabrication'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as RequestSuccessIdRouteImport } from './routes/request.success.$id'
 import { Route as ApiPublicRequestSubmitRouteImport } from './routes/api/public/request-submit'
 
@@ -54,6 +55,11 @@ const RequestFabricationRoute = RequestFabricationRouteImport.update({
   path: '/request/fabrication',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RequestSuccessIdRoute = RequestSuccessIdRouteImport.update({
   id: '/request/success/$id',
   path: '/request/success/$id',
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
+  '/api/health': typeof ApiHealthRoute
   '/request/fabrication': typeof RequestFabricationRoute
   '/request/institutional': typeof RequestInstitutionalRoute
   '/request/lab-space': typeof RequestLabSpaceRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
+  '/api/health': typeof ApiHealthRoute
   '/request/fabrication': typeof RequestFabricationRoute
   '/request/institutional': typeof RequestInstitutionalRoute
   '/request/lab-space': typeof RequestLabSpaceRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
+  '/api/health': typeof ApiHealthRoute
   '/request/fabrication': typeof RequestFabricationRoute
   '/request/institutional': typeof RequestInstitutionalRoute
   '/request/lab-space': typeof RequestLabSpaceRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/api/health'
     | '/request/fabrication'
     | '/request/institutional'
     | '/request/lab-space'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/api/health'
     | '/request/fabrication'
     | '/request/institutional'
     | '/request/lab-space'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/api/health'
     | '/request/fabrication'
     | '/request/institutional'
     | '/request/lab-space'
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   RequestFabricationRoute: typeof RequestFabricationRoute
   RequestInstitutionalRoute: typeof RequestInstitutionalRoute
   RequestLabSpaceRoute: typeof RequestLabSpaceRoute
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RequestFabricationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/request/success/$id': {
       id: '/request/success/$id'
       path: '/request/success/$id'
@@ -219,6 +239,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
+  ApiHealthRoute: ApiHealthRoute,
   RequestFabricationRoute: RequestFabricationRoute,
   RequestInstitutionalRoute: RequestInstitutionalRoute,
   RequestLabSpaceRoute: RequestLabSpaceRoute,
@@ -229,3 +250,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
