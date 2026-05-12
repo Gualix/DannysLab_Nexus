@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Production
+dist/
+.output/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.production.local
+
+# Development
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Cache
+.turbo/
+.cache/
+*.cache
+.eslintcache
+
+# Vite/Build specific
+.vinxi/
+.vite/
+
+# OS specific
+Thumbs.db
+.Thumbs.db
+
+# IDE
+.fleet/
+.vscode-test/
+*.code-workspace
+
+# Docker
+.docker/
+
+# Database
+.postgres
+.supabase/

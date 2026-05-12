@@ -16,35 +16,79 @@ export function useAuth(): AuthState {
   const [roles, setRoles] = useState<string[]>([]);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      if (s?.user) {
-        // defer to avoid recursion
-        setTimeout(async () => {
-          const { data } = await supabase
+    let isMounted = true;
+
+    // Fetch initial session and user roles
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: s } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+
+        setSession(s);
+        
+        if (s?.user) {
+          const { data, error } = await supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", s.user.id);
-          setRoles((data ?? []).map((r) => r.role));
-        }, 0);
+          
+          if (!isMounted) return;
+          
+          if (error) {
+            console.error("Error fetching user roles:", error.message);
+            setRoles([]);
+          } else {
+            setRoles((data ?? []).map((r) => r.role));
+          }
+        } else {
+          setRoles([]);
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+        if (!isMounted) return;
+        setSession(null);
+        setRoles([]);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, s) => {
+      if (!isMounted) return;
+      
+      setSession(s);
+      
+      if (s?.user) {
+        try {
+          const { data, error } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", s.user.id);
+          
+          if (!isMounted) return;
+          
+          if (error) {
+            console.error("Error fetching user roles:", error.message);
+            setRoles([]);
+          } else {
+            setRoles((data ?? []).map((r) => r.role));
+          }
+        } catch (error) {
+          console.error("Error fetching user roles:", error);
+          setRoles([]);
+        }
       } else {
         setRoles([]);
       }
     });
 
-    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
-      setSession(s);
-      if (s?.user) {
-        const { data } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", s.user.id);
-        setRoles((data ?? []).map((r) => r.role));
-      }
-      setLoading(false);
-    });
-
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
   }, []);
 
   return {

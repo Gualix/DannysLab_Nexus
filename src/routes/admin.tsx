@@ -30,6 +30,8 @@ function AdminPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<RequestRow[]>([]);
   const [filter, setFilter] = useState<string>("all");
+  const [dataLoading, setDataLoading] = useState(false);
+  const [dataError, setDataError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -37,28 +39,72 @@ function AdminPage() {
 
   useEffect(() => {
     if (!isStaff) return;
-    supabase
-      .from("service_requests")
-      .select("id,service_type,status,requester_name,requester_email,affiliation,requested_date,created_at")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => setRows((data ?? []) as RequestRow[]));
+
+    const loadRequests = async () => {
+      setDataLoading(true);
+      setDataError(null);
+      try {
+        const { data, error } = await supabase
+          .from("service_requests")
+          .select("id,service_type,status,requester_name,requester_email,affiliation,requested_date,created_at")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Error loading service requests:", error.message);
+          setDataError("Failed to load requests. Please try refreshing.");
+          setRows([]);
+          toast.error("Failed to load requests");
+          return;
+        }
+
+        setRows((data ?? []) as RequestRow[]);
+        setDataError(null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        console.error("Error loading service requests:", message);
+        setDataError("An unexpected error occurred");
+        setRows([]);
+        toast.error("Unexpected error loading requests");
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    loadRequests();
   }, [isStaff]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    toast.success("Signed out");
-    navigate({ to: "/login" });
+    try {
+      await supabase.auth.signOut();
+      toast.success("Signed out");
+      navigate({ to: "/login" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Sign out failed";
+      console.error("Sign out error:", message);
+      toast.error("Failed to sign out");
+    }
   };
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase
-      .from("service_requests")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ status, reviewed_at: new Date().toISOString() } as any)
-      .eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setRows((r) => r.map((row) => (row.id === id ? { ...row, status } : row)));
-    toast.success("Status updated");
+    try {
+      const { error } = await supabase
+        .from("service_requests")
+        .update({ status, reviewed_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error updating status:", error.message);
+        toast.error(`Failed to update status: ${error.message}`);
+        return;
+      }
+
+      setRows((r) => r.map((row) => (row.id === id ? { ...row, status } : row)));
+      toast.success("Status updated");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      console.error("Error updating status:", message);
+      toast.error("Failed to update status");
+    }
   };
 
   if (loading) return <div className="p-10 text-center text-muted-foreground">Loading…</div>;
@@ -75,6 +121,24 @@ function AdminPage() {
               administrator to assign you a role in the user_roles table.
             </p>
             <Button onClick={signOut} variant="outline" className="mt-6 rounded-xl">Sign out</Button>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    );
+  }
+
+  if (dataError) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <SiteHeader />
+        <main className="flex-1 grid place-items-center p-8 text-center">
+          <div className="max-w-md">
+            <h1 className="text-2xl font-semibold text-destructive">Error</h1>
+            <p className="mt-3 text-muted-foreground">{dataError}</p>
+            <Button onClick={() => window.location.reload()} className="mt-6 rounded-xl">
+              Try again
+            </Button>
           </div>
         </main>
         <SiteFooter />

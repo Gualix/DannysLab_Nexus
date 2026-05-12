@@ -2,6 +2,29 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { validateSubmission } from "@/lib/schemas";
 
+interface ServiceRequest {
+  service_type: string;
+  requester_name: string;
+  requester_email: string;
+  requester_phone: string | null;
+  affiliation: string;
+  akamai_pillars: string[] | null;
+  requested_date: string;
+  safety_agreed: boolean;
+  purpose: string | null;
+  duration_minutes: number | null;
+  attendees_count: number | null;
+  external_attendees: number | null;
+  waiver_agreed: boolean;
+  workshop_id: string | null;
+  target_age_group: string | null;
+  fabrication_description: string | null;
+  fabrication_quantity: number | null;
+  file_url: string | null;
+  institution_name: string | null;
+  institution_type: string | null;
+}
+
 export const Route = createFileRoute("/api/public/request-submit")({
   server: {
     handlers: {
@@ -10,7 +33,7 @@ export const Route = createFileRoute("/api/public/request-submit")({
           const raw = await request.json();
           const data = validateSubmission(raw);
 
-          const insertRow: Record<string, unknown> = {
+          const insertRow: ServiceRequest = {
             service_type: data.service_type,
             requester_name: data.requester_name,
             requester_email: data.requester_email,
@@ -35,18 +58,34 @@ export const Route = createFileRoute("/api/public/request-submit")({
 
           const { data: inserted, error } = await supabaseAdmin
             .from("service_requests")
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .insert(insertRow as any)
+            .insert(insertRow)
             .select("id")
             .single();
 
           if (error) {
-            console.error("submit insert error", error);
-            return new Response(JSON.stringify({ error: error.message }), {
-              status: 400,
-              headers: { "Content-Type": "application/json" },
+            console.error("[API] Database insert error:", {
+              code: error.code,
+              message: error.message,
+              details: error.details,
+              hint: error.hint,
             });
+            return new Response(
+              JSON.stringify({
+                error: "Failed to submit request",
+                details: error.message,
+              }),
+              {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+              }
+            );
           }
+
+          console.info("[API] Service request submitted successfully:", {
+            id: inserted.id,
+            service_type: data.service_type,
+            requester_email: data.requester_email,
+          });
 
           return new Response(JSON.stringify({ id: inserted.id }), {
             status: 200,
@@ -54,10 +93,21 @@ export const Route = createFileRoute("/api/public/request-submit")({
           });
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : "Invalid request";
-          return new Response(JSON.stringify({ error: message }), {
-            status: 422,
-            headers: { "Content-Type": "application/json" },
+          console.error("[API] Request submission error:", {
+            error: message,
+            stack: err instanceof Error ? err.stack : undefined,
           });
+
+          return new Response(
+            JSON.stringify({
+              error: "Invalid request",
+              details: message,
+            }),
+            {
+              status: 422,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
         }
       },
     },
