@@ -85,6 +85,36 @@ docker run -p 3000:3000 \
   danny-lab:latest
 ```
 
+#### 🖥️ Building on Mac for a Linux server
+
+We develop on macOS (often Apple Silicon, `arm64`), but the production host
+is a Linux `x86_64` box. Docker uses the build host's architecture by
+default, so an image built on an M-series Mac will be `linux/arm64` and
+will fail to run on the target server.
+
+Always build for the target platform explicitly:
+
+```bash
+# Build a Linux x86_64 image from any Mac (Intel or Apple Silicon).
+docker buildx build --platform linux/amd64 -t danny-lab:latest --load .
+
+# Or with compose (sets the platform on the app service for this run):
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose build
+```
+
+To push a multi-arch image directly to a registry:
+
+```bash
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t <registry>/danny-lab:latest \
+  --push .
+```
+
+Note: `buildx` requires Docker Desktop (or `docker buildx create --use`).
+On Apple Silicon, the `linux/amd64` build runs under QEMU emulation — it
+is slower than a native build but produces a fully Linux-x86_64 image.
+
 ## 📝 Scripts
 
 ```bash

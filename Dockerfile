@@ -1,54 +1,57 @@
-# Multi-stage build for production
-# Stage 1: Builder
-FROM node:22-alpine AS builder
+# Plain Node SSR build for TanStack Start (no Cloudflare).
+
+# Stage 1: Builder — installs deps & runs the production build.
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
+# Ensure plugin-react emits the production JSX runtime (jsx, not jsxDEV).
+ENV NODE_ENV=production
 
-# Install dependencies
-RUN npm ci || npm install
+COPY package.json package-lock.json* ./
+# Install incl. devDependencies (vite, plugins) even with NODE_ENV=production.
+RUN npm install --include=dev --no-audit --no-fund
 
-# Copy source code
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Stage 2: Runtime
-FROM node:22-alpine
+# Stage 2: Production deps — slim install of only runtime deps (srvx).
+FROM node:22-slim AS prod-deps
 
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+COPY package.json package-lock.json* ./
+# Install only what server.mjs needs at runtime.
+RUN npm install --omit=dev --no-audit --no-fund srvx@^0.11
 
-# Copy package.json for runtime dependencies (if needed)
-COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
+# Stage 3: Runtime
+FROM node:22-slim AS runtime
 
-# Install only production dependencies (optional for Vite/SPA)
-# For this app, dependencies are included in build output
-RUN npm ci --only=production || true
+WORKDIR /app
 
-# Copy built application from builder
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends dumb-init curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Built output, server entry, and production deps
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server.mjs ./server.mjs
+COPY --from=builder /app/package.json ./package.json
+COPY --from=prod-deps /app/node_modules ./node_modules
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# Non-root user
+RUN groupadd -r nodeapp && useradd -r -g nodeapp -d /app nodeapp \
+    && chown -R nodeapp:nodeapp /app
+USER nodeapp
 
-USER nodejs
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOST=0.0.0.0
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error()})"
-
-# Expose port
 EXPOSE 3000
 
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD curl -fsS http://localhost:3000/api/health -o /dev/null || exit 1
 
-# Start the application
-CMD ["node", "dist/server/index.js"]
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "server.mjs"]

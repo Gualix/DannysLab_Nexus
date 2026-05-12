@@ -1,7 +1,7 @@
 node_modules
 .git
 .env
-.env.local
+# .env.local intentionally NOT ignored: needed at build time to inline VITE_* vars
 .env.*.local
 dist
 .output
@@ -16,3 +16,4 @@ build/
 .next/
 out/
 .cache
+.wrangler
